@@ -1,63 +1,142 @@
-# 미션 - 로또
+<img width="500" alt="스크린샷 2024-03-10 오후 4 13 46" src="https://github.com/taewoocode/java-lotto-6/assets/147147846/354bad5c-2c42-4ab5-8ba0-c43a4d4c56b0">
 
 
-## 🚀 기능 요구 사항
+<img width="522" alt="스크린샷 2024-03-10 오후 5 03 05" src="https://github.com/taewoocode/java-lotto-6/assets/147147846/4fc6cedf-78ae-4ecc-b521-87dda75704f8">
 
-로또 게임 기능을 구현해야 한다. 로또 게임은 아래와 같은 규칙으로 진행된다.
+## 클래스 분리
+
+<img width="776" alt="스크린샷 2024-03-10 오후 2 36 17" src="https://github.com/taewoocode/java-lotto-6/assets/147147846/3d7d4212-765d-4131-847c-654b4f58a855">
+
+실행 흐름도에서 사용되는 명사를 추출하였다. 로또, 구매자, 당첨 로또, 통계들을 확인할 수 있었고 객체를 구성하였다.
+
+## 실행 흐름
+
+<img width="481" alt="스크린샷 2024-03-10 오후 4 47 03" src="https://github.com/taewoocode/java-lotto-6/assets/147147846/ca838fcf-30b8-4fd6-83bd-efd286edc577">
+
+메시지를 전달하는 것으로 어떠한 메서드를 사용해야 하는지에 대해서도 쉽게 생각할 수 있었다.
+
+## 조립을 활용하자
+
+상속 관계로 구성이 되어있으면 상위 클래스의 변경이 용이하지 않다.
+
+상위 클래스의 작은 변경들이 하위 클래스에서 어떠한 영향을 끼칠지는 아무도 모른다.
+
+그렇기에 상속의 방식보단 필드로 객체를 참조하는 방식을 선택했다.
+
+## 검증방식
+
+```java
+ublic class Lotto {
+    private final List<Integer> numbers; 
+
+    
+    public Lotto(List<Integer> numbers) {
+        validate(numbers); 
+        this.numbers = numbers; 
+    }
+
+    // 번호 리스트를 검증
+    private void validate(List<Integer> numbers) {
+        validateCount(numbers); 
+        validateRange(numbers); 
+        validateDuplication(numbers); 
+    }
+
+    // 번호 리스트의 길이를 검증
+    private void validateCount(List<Integer> numbers) {
+        if (numbers.size() != 6) {
+            throw new IllegalArgumentException("Invalid number count. Expected: 6, Actual: " + numbers.size());
+        }
+    }
+
+    // 번호 리스트의 각 항목이 유효한 범위 내에 있는지 검증
+    private void validateRange(List<Integer> numbers) {
+        for (int number : numbers) {
+            if (number < 1 || number > 45) {
+                throw new IllegalArgumentException("Invalid number range. Number should be between 1 and 45: " + number);
+            }
+        }
+    }
+
+    // 번호 리스트에 중복된 번호가 있는지 검증
+    private void validateDuplication(List<Integer> numbers) {
+        Set<Integer> uniqueNumbers = new HashSet<>(numbers);
+        if (uniqueNumbers.size() != numbers.size()) {
+            throw new IllegalArgumentException("Duplicate numbers are not allowed.");
+        }
+    }
+}
+```
+
+검증이 어디에 위채해야하며 어떻게 존재해야 하는지에 대해서도 고민해볼 수 있었다.
+
+생성 전 검증 과정이 존재하고 검증을 통과하지 못하게 해놓으면 객체 생성이 이뤄지지 않는다. 즉 클라이언트 입장에서 잘못된 값을 입력하더라도 잘못된 객체 생성의 오용을 막을 수 있다.
+
+코드는 다른 사람이 보기에도 그 의도가 잘 파악되어 있는 것이 중요하다고 느낄 수 있었다.
+
+## Enum
+
+Enum(열거형)은 바뀌지 않는 값들의 집합을 뜻한다.
+
+미션 요구 사항에는 Java Enum을 활용해야 한다는 요구사항이 있었기에 최대한 활용하려고 노력했었다.
+
+```java
+public enum LottoRank {
+    FIRST(6, 2_000_000_000, "6개 일치 (2,000,000,000원) - "), // 1등
+    SECOND(5, 30_000_000, "5개 일치, 보너스 볼 일치 (30,000,000원) - "), // 2등
+    THIRD(5, 1_500_000, "5개 일치 (1,500,000원) - "), // 3등
+    FOURTH(4, 50_000, "4개 일치 (50,000원) - "), // 4등
+    FIFTH(3, 5_000, "3개 일치 (5,000원) - "), // 5등
+    MISS(0, 0, "낙첨 - "); // 미당첨
+
+    Ranking(int matchCount, int winningAmount, String message) {
+        this.matchCount = matchCount;
+        this.winningAmount = winningAmount;
+        this.message = message;
+    }
+    
+   
 
 ```
-- 로또 번호의 숫자 범위는 1~45까지이다.
-- 1개의 로또를 발행할 때 중복되지 않는 6개의 숫자를 뽑는다.
-- 당첨 번호 추첨 시 중복되지 않는 숫자 6개와 보너스 번호 1개를 뽑는다.
-- 당첨은 1등부터 5등까지 있다. 당첨 기준과 금액은 아래와 같다.
-    - 1등: 6개 번호 일치 / 2,000,000,000원
-    - 2등: 5개 번호 + 보너스 번호 일치 / 30,000,000원
-    - 3등: 5개 번호 일치 / 1,500,000원
-    - 4등: 4개 번호 일치 / 50,000원
-    - 5등: 3개 번호 일치 / 5,000원
+
+로또 등수인 Rank는 일치한 개수, 상금, 보너스 번호의 일치 여부가 변하지 않을 값이라 판단하여 Enum으로 사용하기에 적합하다고 판단을 했다.
+
+## 테스트 코드
+
+이번 미션을 진행하면서 가장 어려웠고, 고민했던 부분은 테스트라고 말할 수 있을 거 같다.
+
+테스트의 적용이 어려웠던 것은 실제로 코드를 작성하면서 테스트의 적용이 익숙하지 않은 숙련의 문제도 있을 것이고 실제로 테스트의 적용이 어렵게 구현이 되어있다고 미션란에 설명이 되어있었다.
+
+테스트를 구현과 같은 레벨로 취급하며 테스트가 진행이 되지 않을 경우 설계를 변경하는 것을 고려하게끔 설명하고 있었다.
+
+이번 미션을 통해 테스트 코드의 가치를 많이 느낄 수 있었고, public을 활용하여 최대한 많은 메서드들을 검증하기 위해서 노력했다.
+
+```java
+class WinningResultTest {
+
+    @ParameterizedTest
+    @CsvSource(value = {"1,2,3,4,5,6:FIRST", "1,2,3,4,5,7:SECOND", "1,2,3,4,5,8:THIRD", "1,2,3,4,8,10:FOURTH",
+            "1,2,3,8,9,10:FIFTH", "1,2,8,9,10,11:MISS"}, delimiter = ':')
+    @DisplayName("사용자가 구매한 로또 번호와 당첨번호를 비교해 등수 확인")
+    void compareWinningResults(String input, Ranking expectedRanking) {
+        List<Integer> ticketNumbers = parseInputToList(input);
+        Lotto userLotto = new Lotto(ticketNumbers);
+        Lotto winningLotto = new Lotto(Arrays.asList(1, 2, 3, 4, 5, 6));
+        int bonusBall = 7;
+        WinningResult winningResult = new WinningResult(winningLotto, bonusBall);
+
+        assertThat(winningResult.match(userLotto)).isEqualTo(expectedRanking);
+    }
+
+    private List<Integer> parseInputToList(String input) {
+        String[] numbersAsString = input.split(",");
+        List<Integer> numbers = new ArrayList<>();
+        for (String numberAsString : numbersAsString) {
+            numbers.add(Integer.parseInt(numberAsString));
+        }
+        return numbers;
+    }
+}
 ```
 
-- 로또 구입 금액을 입력하면 구입 금액에 해당하는 만큼 로또를 발행해야 한다.
-- 로또 1장의 가격은 1,000원이다.
-- 당첨 번호와 보너스 번호를 입력받는다.
-- 사용자가 구매한 로또 번호와 당첨 번호를 비교하여 당첨 내역 및 수익률을 출력하고 로또 게임을 종료한다.
-- 사용자가 잘못된 값을 입력할 경우 `IllegalArgumentException`를 발생시키고, "[ERROR]"로 시작하는 에러 메시지를 출력 후 그 부분부터 입력을 다시 받는다.
-    - `Exception`이 아닌 `IllegalArgumentException`, `IllegalStateException` 등과 같은 명확한 유형을 처리한다.
-
-## 🎯 프로그래밍 요구 사항
-
-- JDK 17 버전에서 실행 가능해야 한다. **JDK 17에서 정상적으로 동작하지 않을 경우 0점 처리한다.**
-- 프로그램 실행의 시작점은 `Application`의 `main()`이다.
-- `build.gradle` 파일을 변경할 수 없고, 외부 라이브러리를 사용하지 않는다.
-- [Java 코드 컨벤션](https://github.com/woowacourse/woowacourse-docs/tree/master/styleguide/java) 가이드를 준수하며 프로그래밍한다.
-- 프로그램 종료 시 `System.exit()`를 호출하지 않는다.
-- 프로그램 구현이 완료되면 `ApplicationTest`의 모든 테스트가 성공해야 한다. **테스트가 실패할 경우 0점 처리한다.**
-- 프로그래밍 요구 사항에서 달리 명시하지 않는 한 파일, 패키지 이름을 수정하거나 이동하지 않는다.
-- indent(인덴트, 들여쓰기) depth를 3이 넘지 않도록 구현한다. 2까지만 허용한다.
-    - 예를 들어 while문 안에 if문이 있으면 들여쓰기는 2이다.
-    - 힌트: indent(인덴트, 들여쓰기) depth를 줄이는 좋은 방법은 함수(또는 메서드)를 분리하면 된다.
-- 3항 연산자를 쓰지 않는다.
-- 함수(또는 메서드)가 한 가지 일만 하도록 최대한 작게 만들어라.
-- JUnit 5와 AssertJ를 이용하여 본인이 정리한 기능 목록이 정상 동작함을 테스트 코드로 확인한다.
-
-
-### 추가된 요구 사항
-
-- 함수(또는 메서드)의 길이가 15라인을 넘어가지 않도록 구현한다.
-    - 함수(또는 메서드)가 한 가지 일만 잘 하도록 구현한다.
-- else 예약어를 쓰지 않는다.
-    - 힌트: if 조건절에서 값을 return하는 방식으로 구현하면 else를 사용하지 않아도 된다.
-    - else를 쓰지 말라고 하니 switch/case로 구현하는 경우가 있는데 switch/case도 허용하지 않는다.
-- Java Enum을 적용한다.
-- 도메인 로직에 단위 테스트를 구현해야 한다. 단, UI(System.out, System.in, Scanner) 로직은 제외한다.
-    - 핵심 로직을 구현하는 코드와 UI를 담당하는 로직을 분리해 구현한다. 
-    - 단위 테스트 작성이 익숙하지 않다면 `test/java/lotto/LottoTest`를 참고하여 학습한 후 테스트를 구현한다.
-
-### 라이브러리
-
-- `camp.nextstep.edu.missionutils`에서 제공하는 `Randoms` 및 `Console`
-  API를 사용하여 구현해야 한다.
-    - Random 값 추출은 `camp.nextstep.edu.missionutils.Randoms`의 `pickUniqueNumbersInRange()`를 활용한다.
-    - 사용자가 입력하는 값은 `camp.nextstep.edu.missionutils.Console`의 `readLine()`을 활용한다.
-
-
+**Parameterized Test 활용**: @ParameterizedTest와 @CsvSource를 활용하여 여러 입력 값에 대해 단일 테스트 메서드를 반복해서 실행할 수 있었다. 이렇게 하면 테스트 코드의 중복을 줄이고, 유사한 테스트 케이스를 한 곳에 모아서 관리할 수 있게끔 작성하였다.
